@@ -3,6 +3,8 @@
 echo "make sure you run with sudo else the installation will fail"!
 echo "Enter the domain name: "
 read domain
+echo "Enter django project name: "
+read project_name
 domain_path=$( echo ${domain} | tr '.' '_' )
 
 sudo apt update
@@ -17,7 +19,7 @@ mkdir /home/ubuntu/public_html
 mkdir /home/ubuntu/public_html/$domain_path
 python3 -m venv /home/ubuntu/public_html/$domain_path/venv
 /home/ubuntu/public_html/$domain_path/venv/bin/python3 -m pip install django
-/home/ubuntu/public_html/$domain_path/venv/bin/python3 -m django startproject myproject /home/ubuntu/public_html/$domain_path/.
+/home/ubuntu/public_html/$domain_path/venv/bin/python3 -m django startproject $project_name /home/ubuntu/public_html/$domain_path/.
 
 echo "
 import os
@@ -26,17 +28,17 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
-STATICFILES=[STATIC_ROOT, MEDIA_ROOT]" >> /home/ubuntu/public_html/$domain_path/myproject/settings.py
+STATICFILES=[STATIC_ROOT, MEDIA_ROOT]" >> /home/ubuntu/public_html/$domain_path/$project_name/settings.py
 
 /home/ubuntu/public_html/$domain_path/venv/bin/python3 /home/ubuntu/public_html/$domain_path/manage.py makemigrations
 /home/ubuntu/public_html/$domain_path/venv/bin/python3 /home/ubuntu/public_html/$domain_path/manage.py migrate
 /home/ubuntu/public_html/$domain_path/venv/bin/python3 /home/ubuntu/public_html/$domain_path/manage.py collectstatic
 
 sudo chmod -R 755 /home/ubuntu
-sudo chmod -R 755 /home/ubuntu/public_html/$domain_path
 sudo chown :www-data /home/ubuntu/public_html/$domain_path/db.sqlite3
 sudo chown :www-data /home/ubuntu/public_html/$domain_path
-sudo chown :www-data /home/ubuntu/public_html/$domain_path/myproject
+sudo chown :www-data /home/ubuntu/public_html/$domain_path/$project_name
+sudo chown -R ubuntu:ubuntu /home/ubuntu/public_html/
 
 # paste the following config
 echo "<VirtualHost *:80>
@@ -54,7 +56,7 @@ echo "<VirtualHost *:80>
     <Directory /home/ubuntu/public_html/$domain_path/media>
         Require all granted
     </Directory>
-    <Directory /home/ubuntu/public_html/$domain_path/myproject>
+    <Directory /home/ubuntu/public_html/$domain_path/$project_name>
         <Files wsgi.py>
             Require all granted
         </Files>
@@ -62,7 +64,7 @@ echo "<VirtualHost *:80>
     WSGIPassAuthorization On
     WSGIDaemonProcess $domain_path python-path=/home/ubuntu/public_html/$domain_path/ python-home=/home/ubuntu/public_html/$domain_path/venv
     WSGIProcessGroup $domain_path
-    WSGIScriptAlias / /home/ubuntu/public_html/$domain_path/myproject/wsgi.py
+    WSGIScriptAlias / /home/ubuntu/public_html/$domain_path/$project_name/wsgi.py
 </VirtualHost>" >> /etc/apache2/sites-available/$domain_path.conf
 sudo a2ensite $domain_path.conf
 
@@ -81,7 +83,7 @@ echo "<VirtualHost *:443>
     <Directory /home/ubuntu/public_html/$domain_path/media>
         Require all granted
     </Directory>
-    <Directory /home/ubuntu/public_html/$domain_path/myproject>
+    <Directory /home/ubuntu/public_html/$domain_path/$project_name>
         <Files wsgi.py>
             Require all granted
         </Files>
@@ -89,7 +91,7 @@ echo "<VirtualHost *:443>
     WSGIPassAuthorization On
     WSGIDaemonProcess ssl_$domain_path python-path=/home/ubuntu/public_html/$domain_path/ python-home=/home/ubuntu/public_html/$domain_path/venv
     WSGIProcessGroup $domain_path
-    WSGIScriptAlias / /home/ubuntu/public_html/$domain_path/myproject/wsgi.py
+    WSGIScriptAlias / /home/ubuntu/public_html/$domain_path/$project_name/wsgi.py
     SSLEngine on
     SSLCertificateFile /etc/ssl/certs/apache-selfsigned.crt
     SSLCertificateKeyFile /etc/ssl/private/apache-selfsigned.key
